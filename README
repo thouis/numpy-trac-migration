@@ -1,0 +1,8 @@
+numpy/scipy trac->github issues migration.
+
+Requires a copy of the numpy trace database in numpy-trac.db.
+
+issue.py - classes for representing issues
+trac.py - importer for trac tickets to issues
+github.py - exporter to github
+dump_emails.py - find trac users by email at github
