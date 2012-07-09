@@ -12,12 +12,11 @@ conn = sqlite3.connect("numpy-trac.db")
 c = conn.cursor()
 outf = open("EMAIL_TO_GITHUB.txt", "w")
 badf = open("BAD_EMAILS.txt", "w")
-for (email,) in c.execute('SELECT value FROM session_attribute WHERE name="email"').fetchall()[:2]:
-    print "Looking up", email
+for (email,) in c.execute('SELECT value FROM session_attribute WHERE name="email"').fetchall():
     try:
-        user = g.legacy_search_user_by_email("thouis")
-        outf.write("%s %s\n" %(email, user.name))
-        print "%s %s\n" % (email, user.name)
+        user = g.legacy_search_user_by_email(email)
+        outf.write("%s %s\n" %(email, user.login))
+        print "%s %s\n" % (email, user.login)
     except Exception, e:
-        print e
+        print "NOT FOUND", email, e
         badf.write("%s\n" % email)
