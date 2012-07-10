@@ -1,25 +1,26 @@
 # Check that ticket owners are in EMAIL_TO_GITHUB.txt map
-import sqlite3
+import util
 
-email_map = dict([s.strip().split(" ") for s in open("EMAIL_TO_GITHUB.txt")])
+def get_ticket_owners():
+    c = util.cursor()
+    return [v[0] for v in c.execute("SELECT owner FROM ticket").fetchall()]
 
-def check_ticket_owners(dbfile):
-    conn = sqlite3.connect(dbfile)
-    c = conn.cursor()
-    for (owner,) in c.execute("SELECT owner FROM ticket").fetchall():
-        if owner in ["somebody", "anonymous", "spammer"]:
-            print owner, "None"
-            continue
-        email = c.execute('SELECT value FROM session_attribute WHERE sid=? AND name="email"', (owner,)).fetchone()
-        if email is None:
-            email = owner
-        else:
-            email = email[0]
-        if email in email_map:
-            print email, email_map[email]
-        else:
-            print "MISSING", email
+def get_ticket_reporters():
+    c = util.cursor()
+    return [v[0] for v in c.execute("SELECT reporter FROM ticket").fetchall()]
+
+def get_ticket_ccs():
+    c = util.cursor()
+    return [s.strip() for v in c.execute("SELECT cc FROM ticket").fetchall() for s in v[0].split(",") if s != ""]
 
 if __name__ == '__main__':
-    check_ticket_owners("numpy-trac.db")
-
+    names = get_ticket_owners() + get_ticket_reporters() + get_ticket_ccs()
+    import collections
+    counts = collections.Counter(names)
+    cn = [(c, n) for n, c in counts.iteritems()]
+    cn.sort()
+    cn.reverse()
+    for c, n in cn:
+        if c > 1:
+            if util.trac_email_to_github(util.trac_user_email(n)) is None:
+                print "MISSING", n, util.trac_user_email(n), c
