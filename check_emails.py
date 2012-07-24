@@ -22,5 +22,5 @@ if __name__ == '__main__':
     cn.reverse()
     for c, n in cn:
         if c > 1:
-            if util.trac_email_to_github(util.trac_user_email(n)) is None:
+            if util.trac_email_to_github(util.trac_user_email(n)) is None and util.trac_user_to_github(n) is None:
                 print "MISSING", n, util.trac_user_email(n), c
