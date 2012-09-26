@@ -17,8 +17,16 @@ def lookup(issue):
 def find_milestone(trac_milestone, milestones=[]):
     if len(milestones) == 0:
         milestones += [m for m in gh_repo().get_milestones()]
-    if trac_milestone in ['1.7.0', '1.8.0', '2.0.0']:
-        for m in milestones:
-            if m.title.endswith(trac_milestone[:3]):
-                return m.number
-    return None
+    # some milestones were renamed between trac and github before migrating.
+    trac_milestone = {'1.7.0': 'NumPy 1.7',
+                      '1.8.0': 'NumPy 1.8',
+                      '2.0.0': 'NumPy 2.0'}.get(trac_milestone, trac_milestone)
+    for m in milestones:
+        if m.title == trac_milestone:
+            return m.number
+    if trac_milestone in ['', None, 'Unscheduled']:
+        return None
+    print "CREATING NEW MILESTONE", trac_milestone
+    new_milestone = gh_repo().create_milestone(trac_milestone)
+    milestones += [new_milestone]
+    return new_milestone.number
