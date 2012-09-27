@@ -84,10 +84,18 @@ class issue(object):
         for event in sorted_events:
             if len(event) == 5:
                 time, author, field, oldvalue, newvalue = event
-                if field == 'comment':
+                if field == 'comment' and newvalue not in ['', '<change title>']:
                     header = "Comment in Trac by %s, %s" % (util.mention_trac_user(author), _t(time))
                     body = t2g_markup(newvalue)
                     yield "\n".join([header, "", body])
+                elif field == 'milestone':
+                    try:
+                        new_milestone = ghissues.find_milestone(newvalue).title
+                    except:
+                        new_milestone = "Unscheduled"
+                    yield "Milestone changed to `%s` in Trac by %s, %s" % (new_milestone, util.mention_trac_user(author), _t(time))
+                elif field == 'summary':
+                    yield "Title changed from `%s` to `%s` in Trac by %s, %s" % (oldvalue, newvalue, util.mention_trac_user(author), _t(time))
             elif len(event) == 4:
                 time, author, description, filename = event
                 url = "http://projects.scipy.org/numpy/attachment/ticket/%d/%s" % (self.trac.id, filename)
