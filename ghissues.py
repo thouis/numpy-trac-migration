@@ -1,5 +1,6 @@
 import github
 import getpass
+import time
 
 def gh_repo(r=[]):
     if len(r) == 0:
@@ -39,3 +40,15 @@ def find_milestone(trac_milestone, milestones=[]):
     new_milestone = gh_repo().create_milestone(trac_milestone)
     milestones += [new_milestone]
     return new_milestone
+
+def remove_all_issues(verify):
+    if verify != "YES":
+        return
+    for issue in gh_repo().get_issues():
+        if not "migrated from Trac" in issue.title:
+            continue
+        print "removing issue", issue.title
+        issue.edit("REMOVED", "", None, "closed", None, [])
+        for comment in issue.get_comments():
+            comment.delete()
+        time.sleep(5)
