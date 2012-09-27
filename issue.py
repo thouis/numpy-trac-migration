@@ -152,7 +152,7 @@ class issue(object):
 
 def t2g_inline_code(s):
     # single line code is `code`
-    return re.sub('{{{\(.*?\)}}}', '`\1`', s)
+    return re.sub('{{{(.*?)}}}', '`\\1`', s)
 
 def t2g_markup(s):
     # First replace all inline code blocks with `code`

@@ -12,6 +12,14 @@ def issues(dbfile):
         yield issue.issue(**dict(zip(fields.split(","), vals) + \
                                      [('_changes_and_attachments', changes)]))
 
+def single_issue(dbfile, id):
+    c = util.cursor(dbfile)
+    vals = c.execute("SELECT %s FROM ticket where id=%d" % \
+                         (fields, id)).fetchone()
+    changes = issue_changes_and_attachments(id)
+    return issue.issue(**dict(zip(fields.split(","), vals) + \
+                                  [('_changes_and_attachments', changes)]))
+
 def issue_changes_and_attachments(id):
     c = util.cursor()
     for vals in c.execute("SELECT time, author, field, oldvalue, newvalue FROM ticket_change WHERE ticket=?", (id,)).fetchall():

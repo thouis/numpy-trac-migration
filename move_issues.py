@@ -1,7 +1,6 @@
 import trac
 import time
 import traceback
-import pdb
 
 for issue in trac.issues('numpy-trac.db'):
     issue.githubify()

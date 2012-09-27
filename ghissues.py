@@ -52,3 +52,15 @@ def remove_all_issues(verify):
         for comment in issue.get_comments():
             comment.delete()
         time.sleep(5)
+
+def search_for_failed_markup():
+    for issue in gh_repo().get_issues():
+        if not "migrated from Trac" in issue.title:
+            continue
+        if '{{{' in issue.body or '}}}' in issue.body:
+            yield issue.title
+            continue
+        for comment in issue.get_comments():
+            if '{{{' in comment.body or '}}}' in comment.body:
+                yield issue.title
+                break
