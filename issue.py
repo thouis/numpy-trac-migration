@@ -2,6 +2,7 @@
 
 import util
 from time import strftime, gmtime
+import re
 import ghissues
 
 def _t(secs):
@@ -108,13 +109,15 @@ class issue(object):
         self.github.state = 'closed' if self.trac.status == 'closed' else 'open'
 
     def gh_set_labels(self):
-        self.github.labels = ["component: " + self.trac.component,
-                              "priority: " + self.trac.priority,
-                              self.trac.type.title(),  # Upcase first letter
-                              ]
+        labels = ["priority: " + self.trac.priority,
+                  self.trac.type.title(),  # Upcase first letters
+                  ]
+        if self.trac.component != 'component1': # Trac default
+            labels.append('component: ' + self.trac.component)
+        self.github.labels = [ghissues.find_label(l) for l in labels]
 
     def gh_set_milestone(self):
-        self.github.milesetone = ghissues.find_milestone(self.trac.milestone)
+        self.github.milestone = ghissues.find_milestone(self.trac.milestone)
 
     def gh_set_closed_atby(self):
         if self.github.state == 'closed':
@@ -132,7 +135,37 @@ class issue(object):
                          newvalue)
 
     def push(self):
-        pass
+        repo = ghissues.gh_repo()
+        github_issue = repo.create_issue(title=self.github.title,
+                                         body=self.github.body,
+                                         milestone=self.github.milestone,
+                                         labels=self.github.labels)
+        try:
+            for comment in self.github.comments:
+                github_issue.create_comment(comment)
+        except:
+            print("!!! Error in ticket %s" % self.trac.id)
+        finally:
+            if self.github.state == "closed":
+                github_issue.edit(state='closed')
+            pass
+
+def t2g_inline_code(s):
+    # single line code is `code`
+    return re.sub('{{{\(.*?\)}}}', '`\1`', s)
 
 def t2g_markup(s):
-    return s.replace('{{{', "'''").replace('}}}', "'''")
+    # First replace all inline code blocks with `code`
+    s = ''.join(t2g_inline_code(line) for line in s.split('\r'))
+    # Then replace any multi-line blocks with indentation.
+    # Note that Trac only does multiline blocks if {{{ and }}} are on lines by themselves
+    in_block = False
+    new_s = []
+    for line in s.split('\n'):
+        if not in_block and (line.strip() == '{{{'):
+            in_block = True
+        elif in_block and (line.strip() == '}}}'):
+            in_block = False
+        else:
+            new_s.append(('    ' + line) if in_block else line)
+    return '\n'.join(new_s).replace('@', 'atmention:')  # avoid mentioning, REMOVE before full run
