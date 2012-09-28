@@ -85,7 +85,7 @@ class issue(object):
             if len(event) == 5:
                 time, author, field, oldvalue, newvalue = event
                 if field == 'comment' and newvalue not in ['', '<change title>']:
-                    header = "%s wrote on %s" % (util.mention_trac_user(author), _t(time))
+                    header = "_%s wrote on %s_" % (util.mention_trac_user(author), _t(time))
                     body = t2g_markup(newvalue)
                     yield "\n".join([header, "", body])
                 elif field == 'milestone':
