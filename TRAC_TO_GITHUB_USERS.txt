@@ -24,7 +24,7 @@ fullung@gmail.com alberts
 AndrewStraw astraw
 AndreasKloeckner inducer
 cgohlke cgohlke
-stefan@sun.ac.za stefan
+stefan@sun.ac.za stefanv
 sebhaase sebhaase
 gerrit gerritholl
 timl timleslie
@@ -58,7 +58,7 @@ mforbes mforbes
 lebigot lebigot
 efiring efiring
 derek dhomeier
-david cournapeau cournapeau
+david cournapeau cournape
 alan.mcintyre alanmcintyre
 LevGivon lebedov
 pav@iki.fi pv
