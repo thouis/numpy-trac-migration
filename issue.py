@@ -59,14 +59,14 @@ class issue(object):
         pass
 
     def gh_set_title(self):
-        self.github.title = "%s (migrated from Trac #%d)" % (self.trac.summary, self.trac.id)
+        self.github.title = "%s (Trac #%d)" % (self.trac.summary, self.trac.id)
 
     def gh_set_body(self):
         self.github.body = self.body_header() + t2g_markup(self.trac.description)
 
     def body_header(self):
-        return "\n".join(["Original ticket %s" % self.trac_url(),
-                          "Reported %s by %s, assigned to %s." % \
+        return "\n".join(["_Original ticket %s " % self.trac_url() +
+                          "on %s by %s, assigned to %s._" % \
                               (_t(self.trac.time),
                                util.mention_trac_user(self.trac.reporter),
                                util.mention_trac_user(self.trac.owner)),
@@ -85,7 +85,7 @@ class issue(object):
             if len(event) == 5:
                 time, author, field, oldvalue, newvalue = event
                 if field == 'comment' and newvalue not in ['', '<change title>']:
-                    header = "Comment in Trac by %s, %s" % (util.mention_trac_user(author), _t(time))
+                    header = "%s wrote on %s" % (util.mention_trac_user(author), _t(time))
                     body = t2g_markup(newvalue)
                     yield "\n".join([header, "", body])
                 elif field == 'milestone':
@@ -93,13 +93,13 @@ class issue(object):
                         new_milestone = ghissues.find_milestone(newvalue).title
                     except:
                         new_milestone = "Unscheduled"
-                    yield "Milestone changed to `%s` in Trac by %s, %s" % (new_milestone, util.mention_trac_user(author), _t(time))
+                    yield "Milestone changed to `%s` by %s on %s" % (new_milestone, util.mention_trac_user(author), _t(time))
                 elif field == 'summary':
-                    yield "Title changed from `%s` to `%s` in Trac by %s, %s" % (oldvalue, newvalue, util.mention_trac_user(author), _t(time))
+                    yield "Title changed from `%s` to `%s` by %s on %s" % (oldvalue, newvalue, util.mention_trac_user(author), _t(time))
             elif len(event) == 4:
                 time, author, description, filename = event
                 url = "http://projects.scipy.org/numpy/attachment/ticket/%d/%s" % (self.trac.id, filename)
-                body = "Attachment in Trac by %s, %s: [%s](%s)" % \
+                body = "Attachment added by %s on %s: [%s](%s)" % \
                     (util.mention_trac_user(author),
                      _t(time),
                      filename,
@@ -160,7 +160,14 @@ class issue(object):
 
 def t2g_inline_code(s):
     # single line code is `code`
-    return re.sub('{{{(.*?)}}}', '`\\1`', s)
+    s = re.sub('{{{(.*?)}}}', '`\\1`', s)
+    # bold is __text__
+    s = re.sub("'''(.*?)'''", '__\\1__', s)
+    # italic is _text_
+    s = re.sub("''(.*?)''", '_\\1_', s)
+    # not all git hashes are recognized as such without markup
+    s = re.sub("commit:([a-f0-9]*)", '[\\1](http://github.com/numpy/numpy/commit/\\1)', s)
+    return s
 
 def t2g_markup(s):
     # First replace all inline code blocks with `code`
@@ -172,8 +179,10 @@ def t2g_markup(s):
     for line in s.split('\n'):
         if not in_block and (line.strip() == '{{{'):
             in_block = True
+            new_s.append("\n")
         elif in_block and (line.strip() == '}}}'):
             in_block = False
+            new_s.append("\n")
         else:
             new_s.append(('    ' + line) if in_block else line)
     return '\n'.join(new_s).replace('@', 'atmention:')  # avoid mentioning, REMOVE before full run
