@@ -31,6 +31,7 @@ class issue(object):
         self.trac = base()
         self.trac.__dict__.update(kwargs)
         self.github = base()
+        self.existing_issues = None
 
     def __unicode__(self):
         return "Ticket\n\tTrac\n" + \
@@ -141,6 +142,16 @@ class issue(object):
                         (util.mention_trac_user(author),
                          _t(time),
                          newvalue)
+
+    def in_github(self, existing_issues=set()):
+        if len(existing_issues) == 0:
+            repo = ghissues.gh_repo()
+            existing_issues |= \
+                set(i.title for i in repo.get_issues(state='open'))
+            existing_issues |= \
+                set(i.title for i in repo.get_issues(state='closed'))
+            print len(existing_issues), "existing issues"
+        return self.github.title in existing_issues
 
     def push(self):
         repo = ghissues.gh_repo()

@@ -24,9 +24,12 @@ def cursor(dbfile="numpy-trac.db", c=[]):
         c.append(conn.cursor())
     return c[0]
 
+all_users = []
+
 def mention_trac_user(user):
     ghuser = trac_user_to_github(user)
     if ghuser:
+        all_users.append("@" + ghuser)
         return "atmention:" + ghuser
     if user in ['', 'somebody', 'anonymous', None]:
         return 'unknown'
