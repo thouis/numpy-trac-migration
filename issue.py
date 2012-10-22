@@ -163,7 +163,7 @@ class issue(object):
             for comment in self.github.comments:
                 github_issue.create_comment(comment)
         except:
-            print("!!! Error in ticket %s" % self.trac.id)
+            print("!!! Error in comments for ticket %s" % self.trac.id)
         finally:
             if self.github.state == "closed":
                 github_issue.edit(state='closed')
@@ -196,4 +196,4 @@ def t2g_markup(s):
             new_s.append("\n")
         else:
             new_s.append(('    ' + line) if in_block else line)
-    return '\n'.join(new_s).replace('@', 'atmention:')  # avoid mentioning, REMOVE before full run
+    return '\n'.join(new_s) # .replace('@', 'atmention:')  # avoid mentioning, REMOVE before full run

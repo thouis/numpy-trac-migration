@@ -6,9 +6,9 @@ def gh_repo(r=[]):
     if len(r) == 0:
         u = raw_input("Github username: ")
         p = getpass.getpass("Password: ")
-        g = github.Github(u, p)
+        g = github.Github(u, p, timeout=100)
         del p
-        r += [g.get_user('thouis').get_repo("numpy-trac-migration")]
+        r += [g.get_user('numpy').get_repo("numpy")]
     return r[0]
 
 def lookup(issue):

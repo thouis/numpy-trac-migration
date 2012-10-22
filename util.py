@@ -1,4 +1,5 @@
 import sqlite3
+import re
 
 def trac_email_to_github(email, email_map={}):
     if len(email_map) == 0:
@@ -30,7 +31,10 @@ def mention_trac_user(user):
     ghuser = trac_user_to_github(user)
     if ghuser:
         all_users.append("@" + ghuser)
-        return "atmention:" + ghuser
+        return "@" + ghuser
     if user in ['', 'somebody', 'anonymous', None]:
         return 'unknown'
+    # anonymize emails
+    if '@' in user[1:]:  # don't change @foo
+        user = user.split('@')[0] + '@...'
     return "trac user " + user
