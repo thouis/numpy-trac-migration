@@ -143,15 +143,16 @@ class issue(object):
                          _t(time),
                          newvalue)
 
-    def in_github(self, existing_issues=set()):
+    def in_github(self, existing_issues={}):
         if len(existing_issues) == 0:
             repo = ghissues.gh_repo()
-            existing_issues |= \
-                set(i.title for i in repo.get_issues(state='open'))
-            existing_issues |= \
-                set(i.title for i in repo.get_issues(state='closed'))
+            for i in repo.get_issues(state='open'):
+                existing_issues[i.title] = i.number
+            for i in repo.get_issues(state='closed'):
+                existing_issues[i.title] = i.number
             print len(existing_issues), "existing issues"
-        return self.github.title in existing_issues
+        return existing_issues.get(self.github.title, False)
+
 
     def push(self):
         repo = ghissues.gh_repo()
@@ -168,6 +169,61 @@ class issue(object):
             if self.github.state == "closed":
                 github_issue.edit(state='closed')
             pass
+
+    def repush_body(self):
+        repo = ghissues.gh_repo()
+        existing_id = self.in_github()
+        print "Replacing body in", existing_id
+        github_issue = repo.get_issue(self.in_github())
+        github_issue.edit(body=self.github.body)
+
+    def repush_comments(self):
+        repo = ghissues.gh_repo()
+        existing_id = self.in_github()
+        print "Replacing comments in", existing_id
+        github_issue = repo.get_issue(self.in_github())
+        for comment in github_issue.get_comments():
+            comment.delete()
+        try:
+            for comment in self.github.comments:
+                github_issue.create_comment(comment)
+        except:
+            print("!!! Error in comments for ticket %s" % self.trac.id)
+        finally:
+            if self.github.state == "closed":
+                github_issue.edit(state='closed')
+            pass
+
+    def check_crossrefs(self):
+        def fix_ref(old_ref):
+            num = int(old_ref.group(0)[1:])
+            if num > 10:  # try to avoid common non-issues
+                new_num = trac_id_to_github_number(num)
+                if new_num:
+                    return "#%d" % new_num
+            return old_ref.group(0)
+        def fix_line(l):
+            if l.startswith('    '):
+                return l  # ignore code blocks
+            if l.startswith('Ticket #'):
+                return l  # ignore unquoted numpy.test() output lines
+            new_line = re.sub('(?<!Python .\..\.. \()#[0-9]+(?!(( 0x00)|( PyEval)|(-Ubuntu)))', fix_ref, l)
+            if l != new_line:
+                print "OLD", l
+                print "NEW", new_line
+                print ""
+            return new_line
+        def fix_refs(block):
+            return "\n".join(fix_line(l)
+                             for l in block.split('\n'))
+        old_body = self.github.body
+        old_comments = [c for c in self.github.comments]
+        self.github.body = fix_refs(self.github.body)
+        self.github.comments = [fix_refs(c) for c in self.github.comments]
+        if self.github.body != old_body:
+            self.repush_body()
+        if self.github.comments != old_comments:
+            self.repush_comments()
 
 def t2g_inline_code(s):
     # single line code is `code`
@@ -197,3 +253,17 @@ def t2g_markup(s):
         else:
             new_s.append(('    ' + line) if in_block else line)
     return '\n'.join(new_s) # .replace('@', 'atmention:')  # avoid mentioning, REMOVE before full run
+
+def trac_id_to_github_number(tracid, issuemap={}):
+    if len(issuemap) == 0:
+        repo = ghissues.gh_repo()
+        for i in repo.get_issues(state='open'):
+            if 'Trac #' in i.title:
+                tracid = int(i.title.split('#')[-1][:-1])
+                issuemap[tracid] = i.number
+        for i in repo.get_issues(state='closed'):
+            if 'Trac #' in i.title:
+                tracid = int(i.title.split('#')[-1][:-1])
+                issuemap[tracid] = i.number
+        print len(issuemap), "existing issues"
+    return issuemap.get(tracid, False)
